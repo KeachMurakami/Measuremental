@@ -1,12 +1,5 @@
-
-# This is the user-interface definition of a Shiny web application.
-# You can find out more about building applications with Shiny here:
-#
-# http://shiny.rstudio.com
-#
-
 library(shiny)
-
+library(rCharts)
 
 
 shinyUI(pageWithSidebar(
@@ -25,13 +18,17 @@ shinyUI(pageWithSidebar(
                   '.csv',
                   '.CSV'
                 )),
+      tags$hr(),
       selectInput("Basis", label = "Display based on ...", selected = "Leaf Area",
                   choices = c("Leaf Area" = "perArea", "Fresh Weight" = "perFW")), #, "Dry Weight" = "perDW", "Chl a+b" = "perChls)),
-      submitButton()
-    ),
+      submitButton(),
+      tags$hr(),
+      downloadButton('downloadData', 'Download the table')
+      ),
     # Show a plot of the generated distribution
+
   mainPanel(
     plotOutput("distPlot"),
-    tableOutput("contents")
+    chartOutput("contents", "datatables")
     )
 ))
