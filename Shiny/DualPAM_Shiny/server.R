@@ -9,59 +9,6 @@ library(data.table)
 library(rCharts)
 library(RCurl)
 
-ChlAnalyze <-
-  function(file){
-    
-    df <-
-      read.csv(file, stringsAsFactors = FALSE) %>%
-      na.omit
-      
-    if(length(unique(df$PlantNo)) < dim(df)[1]){
-      infoChl <-
-        df[duplicated(df[, c("Treatment", "PlantNo")]), ] %>%
-        select(Treatment, PlantNo, FW_g, LA_cm2)
-    } else {
-      infoChl <-
-        df %>%
-        select(Treatment, PlantNo, FW_g, LA_cm2)
-    }
-    
-    dataChl <-
-      df %>%
-      mutate(Aa = A663.8 - A750.0,
-             Ab = A646.8 - A750.0,
-             Ac = A480.0 - A750.0
-      ) %>%
-      select(-A663.8, -A646.8, -A480.0, -A750.0)
-    
-    chlM <-
-      (as.matrix(dataChl[, c("Aa", "Ab")]) %*% Porra) %>%
-      as.data.frame %>%
-      mutate(ab_ratio = V1 / V2) %>%
-      set_names(c("chl_aM", "chl_bM", "ab_ratio"))
-    
-    chlW <-
-      (as.matrix(dataChl[, c("Aa", "Ab", "Ac")]) %*% Wellburn) %>%
-      as.data.frame %>%
-      mutate(V3 = (V3 - 1.12 * V1 - 34.07 * V2) / 245) %>%
-      set_names(c("chl_aW", "chl_bW", "carotenoids_W"))
-    
-      cbind(dataChl[, c("Treatment", "PlantNo")], chlM, chlW) %>%
-      group_by(Treatment, PlantNo) %>%
-      summarise_each(funs = "mean", chl_aM:carotenoids_W) %>%
-      ungroup %>%
-      merge(., infoChl, by = c("Treatment", "PlantNo")) %>%
-      return
-  }
-
-# input my function
-  eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/functions.R", ssl.verifypeer = FALSE)))
-
-  # for calc based on mol
-  Porra <- matrix(c(13.43, -3.47, -5.38, 22.90), 2, 2)
-  # for calc based on weight
-  Wellburn <- matrix(c(12, -3.11, 0, -4.88, 20.78, 0, 0, 0, 1000), 3, 3)
-
 shinyServer(function(input, output) {
   
   output$contents <- renderChart2({
