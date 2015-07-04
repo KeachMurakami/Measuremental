@@ -9,6 +9,14 @@ library(data.table)
 library(rCharts)
 library(RCurl)
 
+# input my function
+  eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
+
+  # for calc based on mol
+  Porra <- matrix(c(13.43, -3.47, -5.38, 22.90), 2, 2)
+  # for calc based on weight
+  Wellburn <- matrix(c(12, -3.11, 0, -4.88, 20.78, 0, 0, 0, 1000), 3, 3)
+
 ChlAnalyze <-
   function(file){
     
@@ -16,6 +24,7 @@ ChlAnalyze <-
       read.csv(file, stringsAsFactors = FALSE) %>%
       na.omit
       
+    # Cope with technical replicate
     if(length(unique(df$PlantNo)) < dim(df)[1]){
       infoChl <-
         df[duplicated(df[, c("Treatment", "PlantNo")]), ] %>%
@@ -34,6 +43,7 @@ ChlAnalyze <-
       ) %>%
       select(-A663.8, -A646.8, -A480.0, -A750.0)
     
+    # in mol
     chlM <-
       (as.matrix(dataChl[, c("Aa", "Ab")]) %*% Porra) %>%
       as.data.frame %>%
@@ -46,21 +56,14 @@ ChlAnalyze <-
       mutate(V3 = (V3 - 1.12 * V1 - 34.07 * V2) / 245) %>%
       set_names(c("chl_aW", "chl_bW", "carotenoids_W"))
     
-      cbind(dataChl[, c("Treatment", "PlantNo")], chlM, chlW) %>%
+      bind_cols(dataChl[, c("Treatment", "PlantNo")], chlM, chlW) %>%
       group_by(Treatment, PlantNo) %>%
       summarise_each(funs = "mean", chl_aM:carotenoids_W) %>%
       ungroup %>%
-      merge(., infoChl, by = c("Treatment", "PlantNo")) %>%
+      merge(infoChl, ., by = c("Treatment", "PlantNo")) %>%
       return
   }
 
-# input my function
-  eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/functions.R", ssl.verifypeer = FALSE)))
-
-  # for calc based on mol
-  Porra <- matrix(c(13.43, -3.47, -5.38, 22.90), 2, 2)
-  # for calc based on weight
-  Wellburn <- matrix(c(12, -3.11, 0, -4.88, 20.78, 0, 0, 0, 1000), 3, 3)
 
 shinyServer(function(input, output) {
   
@@ -108,13 +111,14 @@ shinyServer(function(input, output) {
       rbind(., Chl_ab) %>%
       select_("Treatment", "variable", Basis) %>%
       set_names(c("Treatment", "variable", "value")) %>%
-      summariser(labels = 1:2) %>%      
-      ggplot(aes(x = MainTrtm, y = ave, fill = MainTrtm)) +
+      summariser(labels = 1:2) %>%
+      separate(Treatment, into = c("Treatment", "day")) %>%
+      ggplot(aes(x = Treatment, y = ave, fill = Treatment)) +
       theme_bw(20) +
       geom_bar(stat = "identity") +
       geom_errorbar(aes(ymin = ave - SE, ymax = ave + SE), width = rel(.5)) +
       geom_text(aes(y = ave / 2, label = Tukey)) +
-      facet_wrap(~ Trtms, scale = "free") %>%
+      facet_wrap(variable~ day, scale = "free") %>%
     return
   })
 
