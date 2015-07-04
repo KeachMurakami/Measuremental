@@ -28,7 +28,7 @@ shinyUI(pageWithSidebar(
     # Show a plot of the generated distribution
 
   mainPanel(
-    plotOutput("distPlot"),
+    plotOutput("distPlot", width = 1000, height = 500),
     chartOutput("contents", "datatables")
     )
 ))

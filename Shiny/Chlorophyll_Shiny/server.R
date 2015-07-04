@@ -8,6 +8,7 @@ library(tidyr)
 library(data.table)
 library(rCharts)
 library(RCurl)
+library(googleVis)
 
 # input my function
   eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
@@ -102,6 +103,11 @@ shinyServer(function(input, output) {
       mutate(perArea = value, perFW = value) %>%
       select(-value)
     
+#     labels_data <-
+#       data.frame(Treatment = 0,
+#                  variable = c("ab_ratio", "carotenoids_W", "chl_aM", "chl_aW", "chl_bM", "chl_bW"),
+#                  label = c("chl a/b [mol/mol]", "Cars [g / m2]", "chl a [mmol / m2]", "chl a [g / m2]", "chl b [mmol / m2]", "chl b [g / m2]"))
+#     
     Chl0 %>%
       melt(id.vars = c("Treatment", "PlantNo", "FW_g", "LA_cm2")) %>%
       mutate(perArea = value * 0.1 / LA_cm2,
@@ -112,13 +118,13 @@ shinyServer(function(input, output) {
       select_("Treatment", "variable", Basis) %>%
       set_names(c("Treatment", "variable", "value")) %>%
       summariser(labels = 1:2) %>%
-      separate(Treatment, into = c("Treatment", "day")) %>%
       ggplot(aes(x = Treatment, y = ave, fill = Treatment)) +
       theme_bw(20) +
       geom_bar(stat = "identity") +
       geom_errorbar(aes(ymin = ave - SE, ymax = ave + SE), width = rel(.5)) +
       geom_text(aes(y = ave / 2, label = Tukey)) +
-      facet_wrap(variable~ day, scale = "free") %>%
+#      geom_text(aes(label = label), data = labels_data) +
+      facet_grid(variable ~ ., scale = "free") %>%
     return
   })
 
