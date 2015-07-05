@@ -93,6 +93,7 @@ shinyServer(function(input, output) {
   
   output$distPlot <- renderPlot({
     Basis <- input$Basis 
+    Basis_unit <- ifelse(Basis == "perArea", yes = "m2", no = "gDW")
     Chl0 <-
       input$file1$datapath %>%
       ChlAnalyze
@@ -108,7 +109,7 @@ shinyServer(function(input, output) {
 #                  variable = c("ab_ratio", "carotenoids_W", "chl_aM", "chl_aW", "chl_bM", "chl_bW"),
 #                  label = c("chl a/b [mol/mol]", "Cars [g / m2]", "chl a [mmol / m2]", "chl a [g / m2]", "chl b [mmol / m2]", "chl b [g / m2]"))
 #     
-    Chl0 %>%
+      Chl0 %>%
       melt(id.vars = c("Treatment", "PlantNo", "FW_g", "LA_cm2")) %>%
       mutate(perArea = value * 0.1 / LA_cm2,
              perFW = value / FW_g) %>%
@@ -117,13 +118,16 @@ shinyServer(function(input, output) {
       rbind(., Chl_ab) %>%
       select_("Treatment", "variable", Basis) %>%
       set_names(c("Treatment", "variable", "value")) %>%
-      summariser(labels = 1:2) %>%
+      summariser(labels = 1:2) %>% .[, -3] %>%
+      mutate(variable = str_replace_all(variable,
+                        pattern = c("ab_ratio", "carotenoids_W", "chl_aM", "chl_aW", "chl_bM", "chl_bW"),
+                        replace = c("Chl a/b [mol / mol]", "Cars [g / Basis]", "Chl a [mmol / Basis]", "Chl a [g / Basis]", "Chl b [mmol / Basis]", "Chl b [g / Basis]"))) %>%
+      mutate(variable = str_replace(variable, "Basis", Basis_unit)) %>%
       ggplot(aes(x = Treatment, y = ave, fill = Treatment)) +
-      theme_bw(20) +
+      theme_bw(20) + guides(fill = FALSE) +
       geom_bar(stat = "identity") +
       geom_errorbar(aes(ymin = ave - SE, ymax = ave + SE), width = rel(.5)) +
       geom_text(aes(y = ave / 2, label = Tukey)) +
-#      geom_text(aes(label = label), data = labels_data) +
       facet_grid(variable ~ ., scale = "free") %>%
     return
   })

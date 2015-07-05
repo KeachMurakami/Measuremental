@@ -2,7 +2,7 @@ library(shiny)
 library(rCharts)
 
 
-shinyUI(pageWithSidebar(
+shinyUI(fluidPage(
 
   # Application title
   headerPanel("Analyze leaf chlorophyll contents"),
@@ -28,7 +28,8 @@ shinyUI(pageWithSidebar(
     # Show a plot of the generated distribution
 
   mainPanel(
-    plotOutput("distPlot", width = 1000, height = 500),
+    plotOutput("distPlot", width = 750, height = 500),
     chartOutput("contents", "datatables")
-    )
+    ),
+  theme = "http://bootswatch.com/cerulean/bootstrap.min.css"
 ))
