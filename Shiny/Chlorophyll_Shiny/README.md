@@ -1,4 +1,4 @@
-**Chlorophyll_Shiny**は生葉からのクロロフィル抽出データを解析するツールです。
+**Chlorophyll_Shiny**は生葉からのクロロフィル抽出データを解析するツールです ver1.0。
 
 手法の詳細については、[Porra et al. 1989](http://www.sciencedirect.com/science/article/pii/S0005272889803470)を参照されたし。  
 
@@ -9,11 +9,12 @@ server.Rまたはui.Rを起動し、Rstudioのエディターパネル右上の*
 **Download the table**をクリックすると、分析結果のcsvファイルをダウンロードできます。
 
 特記  
-* 図中のMの場合はmmolでの、Wの場合はgでの表示  
+* ~~図中のMの場合はmmolでの、Wの場合はgでの表示~~ **表示対応**
 
 修正/加筆必要箇所  
 * 単位を正確に表示  
 * 乾物重ベース、総Chlベースなどの切り替えを実装 
+* 処理カラムをtidyr::separateで分離して、ggplot2::facet_gridに使用？
 
 今後の予定
 * レポートファイルを出力できるように修正 (優先; html or csv?; 一応実装したものの、いまいち)  
