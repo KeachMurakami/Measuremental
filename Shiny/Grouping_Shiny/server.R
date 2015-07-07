@@ -15,6 +15,7 @@ library(googleVis)
 # read in my function
 eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
 mean2 <- function(x) mean(x, na.rm = T)
+sd2 <- function(x) sd(x, na.rm = TRUE)
 se <- function(x) sd(x, na.rm = TRUE)/sqrt(sum(!is.na(x)))
 length2 <- function(x) sum(!is.na(x))
 
