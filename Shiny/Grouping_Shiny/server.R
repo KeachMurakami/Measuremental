@@ -13,6 +13,11 @@ library(googleVis)
 
 # read in my function
 eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
+mean2 <- function(x) mean(x, na.rm = T)
+se <- function(x) sd(x, na.rm = TRUE)/sqrt(sum(!is.na(x)))
+length2 <- function(x) sum(!is.na(x))
+
+
 Grouper <-function(file, Plants, Group, mode = "EII"){
   library(mclust) #混合分布を扱うパッケージ mclust (Model-Based Clustering)の読み込み
 
