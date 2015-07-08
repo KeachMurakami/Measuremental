@@ -24,104 +24,102 @@ Grouper <-function(Plants, Group, Mode = "EII", file){#file = "https://docs.goog
   
   results <-
     csv_data %>%
-    mutate(Groups = LETTERS[mc$classification])
+    mutate(Levels = LETTERS[mc$classification],
+           PlantNo = 1:(dim(csv_data)[1]))
   # クラスタリング結果の抽出
   
   Results <-
     lapply(1:Plants, function(i){
       temp <-
         results %>%
-        mutate(PlantNo = 1:(dim(results)[1])) %>%
-        filter(Groups == LETTERS[i])
+        filter(Levels == LETTERS[i])
       Selected <- sample(dim(temp)[1], Group, replace = F)
       temp[Selected, ] %>%
         mutate(Groups = letters[1:Group]) %>%
         return
     }) %>%
     rbind_all
-  
-  Stats <-
-    Results %>%
-    select(-PlantNo) %>%
-    summariser(labels = (dim(Results)[2] - 1)) %>%
-    arrange(variable) %>%
-    select(-SE) %>%
-    mutate(Tukey = str_replace_all(Tukey, "a", ""), 
-           Tukey = str_replace_all(Tukey, "b", "*")) %>%
-    set_names(c("Groups", "variable", "value", "SD", "n", "Tukey"))
-  
-  Figs <-
-    Results %>%
-    select(-PlantNo) %>%
-    melt(id.vars = "Groups") %>%
-    ggplot(aes(x = Groups, y = value, fill = Groups)) +
-    theme_bw(base_size = 20) +
-#    geom_bar(data = Stats, stat = "identity", col = "Black", alpha = .1) +
-    geom_point(position = position_jitter(width = 0.03), size = 5, col = "black", shape = 21, alpha = .5) +
-    facet_grid(variable ~ ., scale = "free") +
-    guides(fill = FALSE) +
-    geom_text(data = Stats, aes(y = value, label = Tukey), size = 20) +
-    geom_errorbar(data = Stats, aes(ymin = value - SD, ymax = value + SD), width = 0.1)
 
-  
-
-  Grouping <-
-    Results %>%
-    arrange(Groups, PlantNo)
-  
-  Aves <-
-    Stats %>%
-    dcast(formula = variable ~ Groups, value.var = c("value")) 
-  SDs <-
-    Stats %>%
-    dcast(formula = variable ~ Groups, value.var = c("SD")) 
-  
-  Data <-
-    bind_rows(mutate(Aves, Par = "ave"), mutate(SDs, Par = "SD"))
-  
-  return(list(Groups = Grouping, Stats = Stats, Figs = Figs, Data = Data))
-  #   pa <-
-  #     mc$parameters 
-  #     pa$mean #平均ベクトル
-  #     pa$pro  #混合分布の各分布の線形係数
-  #     pa$variance$sigma #分散共分散行列
-  #     pa$variance$sigma #分散共分散行列
+  bind_rows(Results, mutate(results, Groups = "x")) %>%
+  arrange(Groups, PlantNo) %>%
+  return
 }
+
 
 shinyServer(function(input, output) {
 
+  GroupedData <-
+    reactive({ Grouper(input$plants, input$groups, file = input$file1$datapath) })
+
   output$message1 <- renderText({
-    "<b>Means + SDs</b> were shown. <br> If any significant differences among the groups, <b>large *</b> will apear (according to Tukey's HSD test)."
+    "<b>Respective data point + SDs</b> were shown. <br> If any significant differences among the groups, <b>large *</b> will apear (according to Tukey's HSD test)."
   })
-  
+
   output$Grouped <- renderTable({
-    table1 <-
-      Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
-      .$Groups
-    
-    table1 %>%
-      select(-(1:(dim(table1)[2] - 2))) %>%
+    GroupedData() %>%
+      select(PlantNo, Groups) %>%
+      filter(Groups != "x") %>%
+      arrange(Groups, PlantNo) %>%
       return
   })
   
-  output$Data <- renderChart2({
-    Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
-      .$Data %>%
+  output$Stats <- renderTable({
+    data1 <- GroupedData()
+      stats <-
+        data1 %>%
+        select(-PlantNo, - Levels) %>%
+        filter(Groups != "x") %>%
+        summariser(labels = (dim(data1)[2] - 2)) %>%
+        arrange(variable) %>%
+        select(-SE) %>%
+        mutate(Tukey = str_replace_all(Tukey, "a", ""), 
+               Tukey = str_replace_all(Tukey, "b", "*")) %>%
+        set_names(c("Groups", "variable", "value", "SD", "n", "Tukey"))
+
+      Aves <-
+        stats %>%
+        dcast(formula = variable ~ Groups, value.var = c("value")) %>%
+        mutate(Parameter = "ave")
+      SDs <-
+        stats %>%
+        dcast(formula = variable ~ Groups, value.var = c("SD")) %>%
+        mutate(Parameter = "SD")
+
+      bind_rows(Aves, SDs) %>%
+        return
+  })
+  
+  output$RawData <- renderChart2({
+    GroupedData() %>%
+      select(-PlantNo, - Levels) %>%
+      arrange(Groups) %>%
       dTable(sPaginationType = input$pagination) %>%
       return
   })
-
-  output$Stats <- renderChart2({
-  Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
-    .$Stats %>%
-    dTable(sPaginationType = input$pagination) %>%
-    return
-  })
   
   output$barPlot <- renderPlot({
-    Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
-      .$Figs %>%
+    data2 <- GroupedData()
+    stats <-
+      data2 %>%
+      select(-PlantNo, - Levels) %>%
+      filter(Groups != "x") %>%
+      summariser(labels = (dim(data2)[2] - 2)) %>%
+      mutate(Tukey = str_replace_all(Tukey, "a", ""), 
+             Tukey = str_replace_all(Tukey, "b", "*")) %>%
+      set_names(c("Groups", "variable", "value", "SD", "SE", "n", "Tukey"))
+    
+    GroupedData() %>%
+      select(-PlantNo) %>%
+      filter(Groups != "x") %>%
+      melt(id.vars = c("Levels", "Groups")) %>%
+      ggplot(aes(x = Groups, y = value, fill = Groups)) +
+      theme_bw(base_size = 20) +
+      geom_point(position = position_jitter(width = 0.01), size = 5, col = "black", shape = 21, alpha = .7) +
+      facet_grid(variable ~ ., scale = "free") +
+      guides(fill = FALSE) +
+      geom_text(data = stats, aes(y = value, label = Tukey), size = 20) +
+      geom_errorbar(data = stats, aes(ymin = value - SD, ymax = value + SD), width = 0.1) %>%
       return
-  })
+    })
   
 })

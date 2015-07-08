@@ -6,7 +6,7 @@ shinyUI(fluidPage(
   headerPanel("Let's Make Reasonable Groups!"),
   fixedRow(
     column(
-      width = 4,
+      width = 3,
       fileInput('file1', 'Choose and upload data',
                 accept = c('.csv', '.CSV')),
       tags$hr(),
@@ -17,12 +17,15 @@ shinyUI(fluidPage(
       tags$hr()
 #      downloadButton('downloadData', 'Download the table')
     ),
-  column(
-    width = 6,
-#    chartOutput("Stats", "datatables"),
-#    chartOutput("Data", "datatables"),
-    htmlOutput("message1"),
-    plotOutput("barPlot", width = 750, height = 750)
+    column(
+      width = 3,
+      tableOutput("Stats")
+    ),
+    column(
+      width = 6,
+  #    chartOutput("RawData", "datatables"),
+      htmlOutput("message1"),
+      plotOutput("barPlot", width = 500, height = 900)
     )),
   theme = "http://bootswatch.com/cerulean/bootstrap.min.css"
 ))
