@@ -1,14 +1,14 @@
-library(mclust) #混合分布を扱うパッケージ mclust (Model-Based Clustering)の読み込み
-library(RCurl)
+library(mclust) # 混合分布を扱うパッケージ mclust (Model-Based Clustering)の読み込み
+library(RCurl) # webからのソースコード読み込みに使用
 
-# read in my function
+# 関数を読み込み
 eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/standard_funs.R", ssl.verifypeer = FALSE)))
 eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
 
 
 Grouper <-function(Plants, Group, Mode = "EII", file){#file = "https://docs.google.com/spreadsheets/d/1hONdsPvBbvWO6sCVILCGTJ1UDgX1xB3iwuRUArPbTNQ"){
   csv_data <-
-    input$file1$datapath %>%
+    file %>%
     read.csv %>%
     select(-1)
   
@@ -45,26 +45,33 @@ Grouper <-function(Plants, Group, Mode = "EII", file){#file = "https://docs.goog
     select(-PlantNo) %>%
     summariser(labels = (dim(Results)[2] - 1)) %>%
     arrange(variable) %>%
-    select(-SE)
+    select(-SE) %>%
+    mutate(Tukey = str_replace_all(Tukey, "a", ""), 
+           Tukey = str_replace_all(Tukey, "b", "*")) %>%
+    set_names(c("Groups", "variable", "value", "SD", "n", "Tukey"))
   
   Figs <-
-    Stats %>%
-    ggplot(aes(x = Groups, y = ave, fill = Groups)) +
+    Results %>%
+    select(-PlantNo) %>%
+    melt(id.vars = "Groups") %>%
+    ggplot(aes(x = Groups, y = value, fill = Groups)) +
     theme_bw(base_size = 20) +
-    geom_bar(stat = "identity", col = "Black") +
-    geom_errorbar(aes(ymin = ave, ymax = ave + SD), width = 0.3) +
+#    geom_bar(data = Stats, stat = "identity", col = "Black", alpha = .1) +
+    geom_point(position = position_jitter(width = 0.03), size = 5, col = "black", shape = 21, alpha = .5) +
     facet_grid(variable ~ ., scale = "free") +
-    geom_text(aes(y = ave / 2, label = Tukey), size = 5) +
-    guides(fill = FALSE)
+    guides(fill = FALSE) +
+    geom_text(data = Stats, aes(y = value, label = Tukey), size = 20) +
+    geom_errorbar(data = Stats, aes(ymin = value - SD, ymax = value + SD), width = 0.1)
 
   
+
   Grouping <-
     Results %>%
     arrange(Groups, PlantNo)
   
   Aves <-
     Stats %>%
-    dcast(formula = variable ~ Groups, value.var = c("ave")) 
+    dcast(formula = variable ~ Groups, value.var = c("value")) 
   SDs <-
     Stats %>%
     dcast(formula = variable ~ Groups, value.var = c("SD")) 
@@ -84,12 +91,12 @@ Grouper <-function(Plants, Group, Mode = "EII", file){#file = "https://docs.goog
 shinyServer(function(input, output) {
 
   output$message1 <- renderText({
-    "<b>Means + SDs</b> were shown with <b>Tukey's HSD test</b>."
+    "<b>Means + SDs</b> were shown. <br> If any significant differences among the groups, <b>large *</b> will apear (according to Tukey's HSD test)."
   })
   
   output$Grouped <- renderTable({
     table1 <-
-      Grouper(input$plants, input$groups) %>%
+      Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
       .$Groups
     
     table1 %>%
@@ -98,21 +105,21 @@ shinyServer(function(input, output) {
   })
   
   output$Data <- renderChart2({
-    Grouper(input$plants, input$groups) %>%
+    Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
       .$Data %>%
       dTable(sPaginationType = input$pagination) %>%
       return
   })
 
   output$Stats <- renderChart2({
-  Grouper(input$plants, input$groups) %>%
+  Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
     .$Stats %>%
     dTable(sPaginationType = input$pagination) %>%
     return
   })
   
   output$barPlot <- renderPlot({
-    Grouper(input$plants, input$groups) %>%
+    Grouper(input$plants, input$groups, file = input$file1$datapath) %>%
       .$Figs %>%
       return
   })
