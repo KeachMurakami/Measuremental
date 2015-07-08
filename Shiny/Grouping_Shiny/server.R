@@ -6,44 +6,45 @@ eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Source
 eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
 
 
-Grouper <-function(Plants, Group, Mode = "EII", file){#file = "https://docs.google.com/spreadsheets/d/1hONdsPvBbvWO6sCVILCGTJ1UDgX1xB3iwuRUArPbTNQ"){
-  csv_data <-
-    file %>%
-    read.csv %>%
-    select(-1)
-  
-#   csv_data <-
-#     gs_url(file) %>%
-#     gs_read %>%
-#     select(-1)
-  mc <-
-    csv_data %>%
-    Mclust(., G = Plants, modelNames = Mode)
-  # 混合分布モデルクラスタリングの実行。
-  # クラスタ数はスライドバーでインプット
-  
-  results <-
-    csv_data %>%
-    mutate(Levels = LETTERS[mc$classification],
-           PlantNo = 1:(dim(csv_data)[1]))
-  # クラスタリング結果の抽出
-  
-  Results <-
-    lapply(1:Plants, function(i){
-      temp <-
-        results %>%
-        filter(Levels == LETTERS[i])
-      Selected <- sample(dim(temp)[1], Group, replace = F)
-      temp[Selected, ] %>%
-        mutate(Groups = letters[1:Group]) %>%
-        return
-    }) %>%
-    rbind_all
-
-  bind_rows(Results, mutate(results, Groups = "x")) %>%
-  arrange(Groups, PlantNo) %>%
-  return
-}
+Grouper <-
+  function(Plants, Group, Mode = "EII", file){
+    csv_data <-
+      file %>%
+      read.csv %>%
+      select(-1)
+    
+    #   csv_data <-
+    #     gs_url(file) %>%
+    #     gs_read %>%
+    #     select(-1)
+    mc <-
+      csv_data %>%
+      Mclust(., G = Plants, modelNames = Mode)
+    # 混合分布モデルクラスタリングの実行。
+    # クラスタ数はスライドバーでインプット
+    
+    results <-
+      csv_data %>%
+      mutate(Levels = LETTERS[mc$classification],
+             PlantNo = 1:(dim(csv_data)[1]))
+    # クラスタリング結果の抽出
+    
+    Results <-
+      lapply(1:Plants, function(i){
+        temp <-
+          results %>%
+          filter(Levels == LETTERS[i])
+        Selected <- sample(dim(temp)[1], Group, replace = F)
+        temp[Selected, ] %>%
+          mutate(Groups = letters[1:Group]) %>%
+          return
+      }) %>%
+      rbind_all
+    
+    bind_rows(Results, mutate(results, Groups = "x")) %>%
+    arrange(Groups, PlantNo) %>%
+    return
+  }
 
 
 shinyServer(function(input, output) {
