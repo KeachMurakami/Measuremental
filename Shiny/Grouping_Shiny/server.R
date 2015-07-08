@@ -1,24 +1,9 @@
 library(mclust) #混合分布を扱うパッケージ mclust (Model-Based Clustering)の読み込み
-library(shiny)
-library(ggplot2)
-library(plyr)
-library(dplyr)
-library(data.table)
-library(magrittr)
-library(tidyr)
-library(reshape2)
-library(data.table)
-library(rCharts)
 library(RCurl)
-library(googleVis)
 
 # read in my function
+eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/standard_funs.R", ssl.verifypeer = FALSE)))
 eval(parse(text = getURL("https://raw.githubusercontent.com/KeachMurakami/Sources/master/summariser.R", ssl.verifypeer = FALSE)))
-mean2 <- function(x) mean(x, na.rm = T)
-sd2 <- function(x) sd(x, na.rm = TRUE)
-se <- function(x) sd(x, na.rm = TRUE)/sqrt(sum(!is.na(x)))
-length2 <- function(x) sum(!is.na(x))
-
 
 Grouper <-function(file, Plants, Group, mode = "EII"){
   library(mclust) #混合分布を扱うパッケージ mclust (Model-Based Clustering)の読み込み
