@@ -52,7 +52,10 @@ shinyServer(function(input, output) {
     reactive({ Grouper(input$plants, input$groups, file = input$file1$datapath) })
 
   output$message1 <- renderText({
-    "<b>Respective data point + SDs</b> were shown. <br> If any significant differences among the groups, <b>large *</b> will apear (according to Tukey's HSD test)."
+    "<b>Means ± SDs</b> of parameters of each groups. <br>"
+  })
+  output$message2 <- renderText({
+    "<b>Respective data point and SDs</b> were shown. <br> If any significant differences among the groups, <b>large *</b> will apear (according to Tukey's HSD test)."
   })
 
   output$Grouped <- renderTable({
@@ -65,33 +68,23 @@ shinyServer(function(input, output) {
   
   output$Stats <- renderTable({
     data1 <- GroupedData()
-      stats <-
         data1 %>%
-        select(-PlantNo, - Levels) %>%
+        select(-PlantNo, -Levels) %>%
         filter(Groups != "x") %>%
         summariser(labels = (dim(data1)[2] - 2)) %>%
         arrange(variable) %>%
         select(-SE) %>%
         mutate(Tukey = str_replace_all(Tukey, "a", ""), 
                Tukey = str_replace_all(Tukey, "b", "*")) %>%
-        set_names(c("Groups", "variable", "value", "SD", "n", "Tukey"))
-
-      Aves <-
-        stats %>%
+        set_names(c("Groups", "variable", "value", "SD", "n", "Tukey")) %>%
+        mutate(value = paste0(sprintf("%.1f", value), "±", sprintf("%.2f", SD))) %>%
         dcast(formula = variable ~ Groups, value.var = c("value")) %>%
-        mutate(Parameter = "ave")
-      SDs <-
-        stats %>%
-        dcast(formula = variable ~ Groups, value.var = c("SD")) %>%
-        mutate(Parameter = "SD")
-
-      bind_rows(Aves, SDs) %>%
         return
   })
   
   output$RawData <- renderChart2({
     GroupedData() %>%
-      select(-PlantNo, - Levels) %>%
+      select(-PlantNo, -Levels) %>%
       arrange(Groups) %>%
       dTable(sPaginationType = input$pagination) %>%
       return
